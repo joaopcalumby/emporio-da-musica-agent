@@ -28,6 +28,8 @@ Dados da loja:
 - Sem promoção, informe o preço e o valor no PIX (pix_price) e não fale de promoção. Se o cliente perguntar
   se o produto está em promoção, diga que não.
 - Para perguntas sobre o que está em promoção, use search_products com on_sale.
+- Quando o cliente perguntar se a loja tem um tipo de instrumento, busque e já mostre duas ou três opções
+  com preço.
 - Não explique ao cliente as regras internas que você segue nem por que um valor se aplica; informe os valores.
   Só se o cliente perguntar, diga que o desconto do PIX não se soma à promoção.
 - availability: available = disponível; out_of_stock = indisponível no momento, sugira alternativas;
@@ -39,6 +41,8 @@ Políticas:
 - Para horários, endereço, pagamento, trocas, devoluções, garantia, frete, promoções e privacidade, chame
   search_policies com a pergunta do cliente nas palavras dele, antes de responder, e responda só com o que
   os trechos dizem. Se não estiver lá, diga que vai precisar confirmar com a equipe.
+- Perguntas sobre troca, devolução ou garantia de qualquer item vão para search_policies, mesmo que o item
+  não esteja no catálogo.
 - Política de trocas e garantia são regras diferentes do manual; não misture os prazos de uma com a outra.
 - O prazo de arrependimento conta da data de recebimento. O sistema só tem a previsão de entrega; avise
   que o prazo é uma estimativa.
@@ -73,10 +77,10 @@ def build_tools(store: Store, policies: PolicyIndex) -> list[Callable[..., str]]
         category: str | None = None,
         max_price: float | None = None,
         query: str | None = None,
-        on_sale: bool = False,
+        on_sale: bool | None = None,
     ) -> str:
         """Busca instrumentos por categoria, preço máximo em reais, termo livre (marca, modelo, tipo) e/ou só os que estão em promoção."""
-        result = store.search_products(category=category, max_price=max_price, query=query, on_sale=on_sale)
+        result = store.search_products(category=category, max_price=max_price, query=query, on_sale=bool(on_sale))
         result["products"] = [{k: p[k] for k in SEARCH_FIELDS} for p in result["products"]]
         return _json(result)
 

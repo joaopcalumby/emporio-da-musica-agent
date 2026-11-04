@@ -12,6 +12,8 @@ MAX_INSTALLMENTS = 12
 FREE_SHIPPING_FROM = Decimal("500")
 LOCAL_SHIPPING_FEE = 35.0
 LOCAL_CITY = "campo grande"
+PLURAL_ENDINGS = (("oes", "ao"), ("aes", "ao"), ("ais", "al"), ("eis", "el"), ("s", ""))
+GENERIC_WORDS = {"instrumento"}
 SEARCHABLE = {"available", "out_of_stock", "last_units"}
 OTHER_CITY_OPTIONS = [
     {"carrier": "PAC (Correios)", "delivery": "5 a 12 dias úteis"},
@@ -39,6 +41,17 @@ def minimum_installment(installments: int) -> Decimal:
     if installments <= 6:
         return Decimal("80")
     return Decimal("100")
+
+
+def singular(word: str) -> str:
+    for plural, single in PLURAL_ENDINGS:
+        if word.endswith(plural):
+            return word[: -len(plural)] + single
+    return word
+
+
+def category_words(text: str) -> set[str]:
+    return {singular(w) for w in re.findall(r"\w+", normalize(text)) if len(w) > 2} - GENERIC_WORDS
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -227,8 +240,8 @@ class Store:
 
     def _matching_category_ids(self, category: str | None, query: str | None) -> list[str]:
         if category:
-            wanted = normalize(category)
-            return [cid for cid, c in self.categories.items() if wanted in normalize(c["name"])]
+            wanted = category_words(category)
+            return [cid for cid, c in self.categories.items() if wanted & category_words(c["name"])]
         if query:
             terms = normalize(query).split()
             return [
