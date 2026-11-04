@@ -1,6 +1,8 @@
+import inspect
 import json
 
 import pytest
+from agno.tools.function import Function
 
 from emporio.agent import build_tools
 from emporio.policies import PolicyIndex, load_sections
@@ -27,6 +29,14 @@ def test_exposed_tools(tools):
         "order_status",
         "search_policies",
     }
+
+
+def test_optional_parameters_accept_null(tools):
+    for tool in tools.values():
+        properties = Function.from_callable(tool).parameters["properties"]
+        for name, parameter in inspect.signature(tool).parameters.items():
+            if parameter.default is not inspect.Parameter.empty:
+                assert {"type": "null"} in properties[name].get("anyOf", []), f"{tool.__name__}.{name}"
 
 
 def test_search_results_are_compact(tools):
