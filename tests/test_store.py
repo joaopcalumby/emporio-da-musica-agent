@@ -151,10 +151,27 @@ def test_shipping_fee(store, city, amount, fee):
     assert store.shipping(city, amount)["fee"] == fee
 
 
+def test_local_shipping_without_amount_gives_the_rule(store):
+    quote = store.shipping("Campo Grande", None)
+    assert quote["fee"] is None
+    assert (quote["free_from"], quote["fee_below"]) == (500.0, 35.0)
+
+
+def test_other_city_without_amount(store):
+    assert store.shipping("Dourados", None)["fee"] is None
+
+
 def test_order_with_matching_email(store):
     order = store.order_status(8, "anacarol.ferreira@coldmail.com")
     assert order["status"] == "shipped"
     assert order["tracking_code"] == "BRJL5544332BR"
+
+
+def test_order_dates_are_named(store):
+    order = store.order_status(7, "leticia.rocha@jmail.com")
+    assert order["purchase_date"] == "2026-02-03"
+    assert order["estimated_delivery"] == "2026-02-17"
+    assert "date" not in order
 
 
 def test_order_with_matching_phone(store):

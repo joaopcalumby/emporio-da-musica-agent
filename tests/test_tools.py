@@ -67,6 +67,10 @@ def test_installments_for_a_given_count(tools):
     }
 
 
+def test_shipping_quote_without_amount(tools):
+    assert call(tools, "shipping_quote", city="Dourados")["options"]
+
+
 def test_order_status_requires_contact(tools):
     assert call(tools, "order_status", order_id=8, email_or_phone="x@y.com") == {"error": "verification_failed"}
 
