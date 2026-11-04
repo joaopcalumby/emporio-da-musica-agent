@@ -1,0 +1,34 @@
+[project]
+name = "emporio-da-musica-agent"
+version = "0.1.0"
+description = "Customer service agent for Empório da Música, a fictional musical instrument store."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "agno>=3.1.12",
+    "fastembed>=0.9.1",
+    "groq>=1.7.0",
+    "pypdf>=6.21.4",
+    "python-dotenv>=1.2.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/emporio"]
+
+[project.scripts]
+emporio = "emporio.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["integration: needs GROQ_API_KEY and network"]
+addopts = "-m 'not integration'"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
