@@ -137,11 +137,14 @@ class Store:
             "installment_value": money(Decimal(str(amount)) / best),
         }
 
-    def shipping(self, city: str, amount: float) -> dict:
+    def shipping(self, city: str, amount: float | None) -> dict:
         if normalize(city) != LOCAL_CITY:
             return {"fee": None, "quote": "calculado pelo CEP de destino", "options": OTHER_CITY_OPTIONS}
+        local = {"carrier": "motoboy próprio", "delivery": "1 a 3 dias úteis"}
+        if amount is None:
+            return {"fee": None, "free_from": money(FREE_SHIPPING_FROM), "fee_below": LOCAL_SHIPPING_FEE, **local}
         fee = 0.0 if Decimal(str(amount)) >= FREE_SHIPPING_FROM else LOCAL_SHIPPING_FEE
-        return {"fee": fee, "carrier": "motoboy próprio", "delivery": "1 a 3 dias úteis"}
+        return {"fee": fee, **local}
 
     def order_status(self, order_id: int, contact: str) -> dict:
         order = self.orders.get(str(order_id))
@@ -170,7 +173,7 @@ class Store:
         view = {
             "id": int(order["order_id"]),
             "customer_first_name": customer["name"].split()[0],
-            "date": order["order_date"],
+            "purchase_date": order["order_date"],
             "status": order["status"],
             "total": float(order["total_brl"]),
             "payment_method": order["payment_method"],
