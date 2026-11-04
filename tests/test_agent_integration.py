@@ -23,6 +23,10 @@ def agent(store):
     return build_agent(store, policies, model_id=os.getenv("GROQ_MODEL") or DEFAULT_MODEL)
 
 
+def plain(content: str) -> str:
+    return re.sub(r"[\s.\u202f]", "", content)
+
+
 def ask(agent, message: str, session: str):
     run = agent.run(message, session_id=session)
     return run.content, {tool.tool_name for tool in run.tools or []}
@@ -31,7 +35,24 @@ def ask(agent, message: str, session: str):
 def test_price_comes_from_a_tool(agent):
     content, tools = ask(agent, "Quanto custa o Takamine GD20?", "price")
     assert tools & {"get_product", "search_products"}
-    assert "2199" in re.sub(r"[\s.\u202f]", "", content)
+    assert "2199" in plain(content)
+
+
+def test_product_without_promotion_does_not_mention_promotions(agent):
+    content, _ = ask(agent, "Quanto custa o Takamine GD20?", "no-promotion")
+    assert "2199" in plain(content)
+    assert "promo" not in content.lower()
+
+
+def test_asked_promotion_on_product_without_one(agent):
+    content, _ = ask(agent, "O violão Takamine GD20 está em promoção?", "asked-promotion")
+    assert re.search(r"\bnão\b", content.lower())
+
+
+def test_lists_products_on_sale(agent):
+    content, tools = ask(agent, "Quais produtos estão em promoção?", "on-sale")
+    assert "search_products" in tools
+    assert all(brand in content.lower() for brand in ("crafter", "taylor", "ohana", "kalani"))
 
 
 def test_policy_question_uses_retrieval(agent):

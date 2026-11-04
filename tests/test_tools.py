@@ -36,6 +36,11 @@ def test_search_results_are_compact(tools):
     assert {"name", "price", "promotion", "pix_price", "availability"} <= set(products[0])
 
 
+def test_search_on_sale(tools):
+    products = call(tools, "search_products", on_sale=True)["products"]
+    assert {p["id"] for p in products} == {90, 94, 121, 127}
+
+
 def test_product_details_include_specs(tools):
     assert "specs" in call(tools, "get_product", name="Takamine GD20")
 

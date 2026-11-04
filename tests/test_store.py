@@ -66,6 +66,14 @@ def test_active_promotion_shows_original_price_and_no_pix_discount(store):
     assert product["pix_price"] is None
 
 
+def test_products_on_sale(store):
+    assert ids(store.search_products(on_sale=True)["products"]) == {90, 94, 121, 127}
+
+
+def test_acoustic_guitars_on_sale(store):
+    assert ids(store.search_products(category="Violões", on_sale=True)["products"]) == {90, 94}
+
+
 def test_inactive_promotion_is_ignored(store):
     assert store.find_product("Martin D-28")["promotion"] is None
 
