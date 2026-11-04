@@ -78,7 +78,11 @@ class Store:
         ]
 
     def search_products(
-        self, category: str | None = None, max_price: float | None = None, query: str | None = None
+        self,
+        category: str | None = None,
+        max_price: float | None = None,
+        query: str | None = None,
+        on_sale: bool = False,
     ) -> dict:
         matching_categories = self._matching_category_ids(category, query)
         terms = normalize(query).split() if query else []
@@ -89,6 +93,7 @@ class Store:
             and (category is None or product["category_id"] in matching_categories)
             and (max_price is None or view["final_price"] <= max_price)
             and all(term in self._searchable_text(product) for term in terms)
+            and (not on_sale or view["promotion"])
         ]
         counts = self._product_counts()
         empty = [

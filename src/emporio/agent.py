@@ -24,8 +24,12 @@ Contato da loja: telefone (67) 3341-4444, WhatsApp (67) 3321-4500, e-mail contat
 
 Dados da loja:
 - Nunca informe preço, estoque, promoção, frete, parcelamento ou pedido sem consultar uma ferramenta.
-- Com promoção ativa, mostre o preço original, o percentual e o preço promocional. O desconto de 5% no PIX
-  só vale para produtos sem promoção.
+- Com promoção ativa, mostre o preço original, o percentual e o preço promocional.
+- Sem promoção, informe o preço e o valor no PIX (pix_price) e não fale de promoção. Se o cliente perguntar
+  se o produto está em promoção, diga que não.
+- Para perguntas sobre o que está em promoção, use search_products com on_sale.
+- Não explique ao cliente as regras internas que você segue nem por que um valor se aplica; informe os valores.
+  Só se o cliente perguntar, diga que o desconto do PIX não se soma à promoção.
 - availability: available = disponível; out_of_stock = indisponível no momento, sugira alternativas;
   last_units = últimas unidades; coming_soon = em breve, não ofereça para compra; discontinued = saiu do
   catálogo, sugira um equivalente.
@@ -65,9 +69,14 @@ def build_tools(store: Store, policies: PolicyIndex) -> list[Callable[..., str]]
         """Lista as categorias de instrumentos que a loja tem à venda."""
         return _json(store.list_categories())
 
-    def search_products(category: str | None = None, max_price: float | None = None, query: str | None = None) -> str:
-        """Busca instrumentos por categoria, preço máximo em reais e/ou termo livre (marca, modelo, tipo)."""
-        result = store.search_products(category=category, max_price=max_price, query=query)
+    def search_products(
+        category: str | None = None,
+        max_price: float | None = None,
+        query: str | None = None,
+        on_sale: bool = False,
+    ) -> str:
+        """Busca instrumentos por categoria, preço máximo em reais, termo livre (marca, modelo, tipo) e/ou só os que estão em promoção."""
+        result = store.search_products(category=category, max_price=max_price, query=query, on_sale=on_sale)
         result["products"] = [{k: p[k] for k in SEARCH_FIELDS} for p in result["products"]]
         return _json(result)
 
