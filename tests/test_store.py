@@ -27,6 +27,26 @@ def test_acoustic_guitars_up_to_1000(store):
     assert ids(result["products"]) == {81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 96, 107, 112}
 
 
+@pytest.mark.parametrize(
+    ("category", "expected"),
+    [
+        ("guitarras elétricas", {131, 132, 133, 134, 145}),
+        ("guitarra", {131, 132, 133, 134, 145}),
+    ],
+)
+def test_category_matches_singular_and_qualified_names(store, category, expected):
+    assert ids(store.search_products(category=category)["products"]) == expected
+
+
+def test_singular_category_matches_plural(store):
+    singular = ids(store.search_products(category="violão")["products"])
+    assert singular and singular == ids(store.search_products(category="Violões")["products"])
+
+
+def test_similar_instrument_does_not_match_another_category(store):
+    assert store.search_products(category="violino")["products"] == []
+
+
 def test_out_of_stock_product_is_listed_as_unavailable(store):
     result = store.search_products(category="Violões", max_price=1000)
     giannini = next(p for p in result["products"] if p["id"] == 96)
@@ -64,6 +84,14 @@ def test_active_promotion_shows_original_price_and_no_pix_discount(store):
         "price": 5519.08,
     }
     assert product["pix_price"] is None
+
+
+def test_products_on_sale(store):
+    assert ids(store.search_products(on_sale=True)["products"]) == {90, 94, 121, 127}
+
+
+def test_acoustic_guitars_on_sale(store):
+    assert ids(store.search_products(category="Violões", on_sale=True)["products"]) == {90, 94}
 
 
 def test_inactive_promotion_is_ignored(store):
