@@ -1,0 +1,16 @@
+name: ci
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t emporio-da-musica-agent .
+      - name: Offline tests inside the image
+        run: docker run --rm emporio-da-musica-agent uv run --no-sync pytest
