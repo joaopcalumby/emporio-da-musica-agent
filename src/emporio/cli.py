@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from dotenv import load_dotenv
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
 
@@ -15,19 +16,19 @@ TITLE = "Empório da Música · Atendimento"
 
 
 def header(settings: Settings) -> str:
-    return f"{TITLE}\nData da loja: {settings.today:%d/%m/%Y}. Digite 'sair' para encerrar."
+    return f"{TITLE}\nData da loja: {settings.now:%d/%m/%Y %H:%M}. Digite 'sair' para encerrar."
 
 
 def reply(content: str) -> Panel:
-    return Panel(Text(content), title="Empório", title_align="left", border_style="red")
+    return Panel(Markdown(content), title="Empório", title_align="left", border_style="red")
 
 
 def main() -> None:
     load_dotenv()
     settings = Settings.from_env()
-    store = Store.from_dir(settings.data_dir, today=settings.today)
+    store = Store.from_dir(settings.data_dir, today=settings.now.date())
     policies = PolicyIndex.build(load_sections(settings.data_dir / "store_policies.pdf"))
-    agent = build_agent(store, policies, model_id=settings.model_id)
+    agent = build_agent(store, policies, model_id=settings.model_id, now=settings.now)
     session_id = str(uuid4())
     console = Console()
     console.print(Text(header(settings)), end="\n\n")

@@ -1,27 +1,27 @@
 import os
 from dataclasses import dataclass
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 
-def store_today(value: str | None) -> date:
-    if not value or value == "today":
-        return date.today()
-    return date.fromisoformat(value)
+def store_now(value: str | None) -> datetime:
+    if not value or value == "now":
+        return datetime.now()
+    return datetime.fromisoformat(value)
 
 
 @dataclass(frozen=True)
 class Settings:
     model_id: str
-    today: date
+    now: datetime
     data_dir: Path = DATA_DIR
 
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
             model_id=os.getenv("GROQ_MODEL") or DEFAULT_MODEL,
-            today=store_today(os.getenv("STORE_TODAY")),
+            now=store_now(os.getenv("STORE_NOW")),
         )
