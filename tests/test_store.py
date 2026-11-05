@@ -27,6 +27,26 @@ def test_acoustic_guitars_up_to_1000(store):
     assert ids(result["products"]) == {81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 96, 107, 112}
 
 
+@pytest.mark.parametrize(
+    ("category", "expected"),
+    [
+        ("guitarras elétricas", {131, 132, 133, 134, 145}),
+        ("guitarra", {131, 132, 133, 134, 145}),
+    ],
+)
+def test_category_matches_singular_and_qualified_names(store, category, expected):
+    assert ids(store.search_products(category=category)["products"]) == expected
+
+
+def test_singular_category_matches_plural(store):
+    singular = ids(store.search_products(category="violão")["products"])
+    assert singular and singular == ids(store.search_products(category="Violões")["products"])
+
+
+def test_similar_instrument_does_not_match_another_category(store):
+    assert store.search_products(category="violino")["products"] == []
+
+
 def test_out_of_stock_product_is_listed_as_unavailable(store):
     result = store.search_products(category="Violões", max_price=1000)
     giannini = next(p for p in result["products"] if p["id"] == 96)
@@ -64,6 +84,14 @@ def test_active_promotion_shows_original_price_and_no_pix_discount(store):
         "price": 5519.08,
     }
     assert product["pix_price"] is None
+
+
+def test_products_on_sale(store):
+    assert ids(store.search_products(on_sale=True)["products"]) == {90, 94, 121, 127}
+
+
+def test_acoustic_guitars_on_sale(store):
+    assert ids(store.search_products(category="Violões", on_sale=True)["products"]) == {90, 94}
 
 
 def test_inactive_promotion_is_ignored(store):
@@ -123,10 +151,27 @@ def test_shipping_fee(store, city, amount, fee):
     assert store.shipping(city, amount)["fee"] == fee
 
 
+def test_local_shipping_without_amount_gives_the_rule(store):
+    quote = store.shipping("Campo Grande", None)
+    assert quote["fee"] is None
+    assert (quote["free_from"], quote["fee_below"]) == (500.0, 35.0)
+
+
+def test_other_city_without_amount(store):
+    assert store.shipping("Dourados", None)["fee"] is None
+
+
 def test_order_with_matching_email(store):
     order = store.order_status(8, "anacarol.ferreira@coldmail.com")
     assert order["status"] == "shipped"
     assert order["tracking_code"] == "BRJL5544332BR"
+
+
+def test_order_dates_are_named(store):
+    order = store.order_status(7, "leticia.rocha@jmail.com")
+    assert order["purchase_date"] == "2026-02-03"
+    assert order["estimated_delivery"] == "2026-02-17"
+    assert "date" not in order
 
 
 def test_order_with_matching_phone(store):

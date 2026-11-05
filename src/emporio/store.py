@@ -12,6 +12,8 @@ MAX_INSTALLMENTS = 12
 FREE_SHIPPING_FROM = Decimal("500")
 LOCAL_SHIPPING_FEE = 35.0
 LOCAL_CITY = "campo grande"
+PLURAL_ENDINGS = (("oes", "ao"), ("aes", "ao"), ("ais", "al"), ("eis", "el"), ("s", ""))
+GENERIC_WORDS = {"instrumento"}
 SEARCHABLE = {"available", "out_of_stock", "last_units"}
 OTHER_CITY_OPTIONS = [
     {"carrier": "PAC (Correios)", "delivery": "5 a 12 dias úteis"},
@@ -39,6 +41,17 @@ def minimum_installment(installments: int) -> Decimal:
     if installments <= 6:
         return Decimal("80")
     return Decimal("100")
+
+
+def singular(word: str) -> str:
+    for plural, single in PLURAL_ENDINGS:
+        if word.endswith(plural):
+            return word[: -len(plural)] + single
+    return word
+
+
+def category_words(text: str) -> set[str]:
+    return {singular(w) for w in re.findall(r"\w+", normalize(text)) if len(w) > 2} - GENERIC_WORDS
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -78,7 +91,11 @@ class Store:
         ]
 
     def search_products(
-        self, category: str | None = None, max_price: float | None = None, query: str | None = None
+        self,
+        category: str | None = None,
+        max_price: float | None = None,
+        query: str | None = None,
+        on_sale: bool = False,
     ) -> dict:
         matching_categories = self._matching_category_ids(category, query)
         terms = normalize(query).split() if query else []
@@ -89,6 +106,7 @@ class Store:
             and (category is None or product["category_id"] in matching_categories)
             and (max_price is None or view["final_price"] <= max_price)
             and all(term in self._searchable_text(product) for term in terms)
+            and (not on_sale or view["promotion"])
         ]
         counts = self._product_counts()
         empty = [
@@ -119,11 +137,14 @@ class Store:
             "installment_value": money(Decimal(str(amount)) / best),
         }
 
-    def shipping(self, city: str, amount: float) -> dict:
+    def shipping(self, city: str, amount: float | None) -> dict:
         if normalize(city) != LOCAL_CITY:
             return {"fee": None, "quote": "calculado pelo CEP de destino", "options": OTHER_CITY_OPTIONS}
+        local = {"carrier": "motoboy próprio", "delivery": "1 a 3 dias úteis"}
+        if amount is None:
+            return {"fee": None, "free_from": money(FREE_SHIPPING_FROM), "fee_below": LOCAL_SHIPPING_FEE, **local}
         fee = 0.0 if Decimal(str(amount)) >= FREE_SHIPPING_FROM else LOCAL_SHIPPING_FEE
-        return {"fee": fee, "carrier": "motoboy próprio", "delivery": "1 a 3 dias úteis"}
+        return {"fee": fee, **local}
 
     def order_status(self, order_id: int, contact: str) -> dict:
         order = self.orders.get(str(order_id))
@@ -152,7 +173,7 @@ class Store:
         view = {
             "id": int(order["order_id"]),
             "customer_first_name": customer["name"].split()[0],
-            "date": order["order_date"],
+            "purchase_date": order["order_date"],
             "status": order["status"],
             "total": float(order["total_brl"]),
             "payment_method": order["payment_method"],
@@ -222,8 +243,8 @@ class Store:
 
     def _matching_category_ids(self, category: str | None, query: str | None) -> list[str]:
         if category:
-            wanted = normalize(category)
-            return [cid for cid, c in self.categories.items() if wanted in normalize(c["name"])]
+            wanted = category_words(category)
+            return [cid for cid, c in self.categories.items() if wanted & category_words(c["name"])]
         if query:
             terms = normalize(query).split()
             return [
