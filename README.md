@@ -94,6 +94,7 @@ src/emporio/config.py    environment settings and store clock
 data/                    the case's CSVs and policy manual
 tests/                   offline suite and the integration suite (-m integration)
 scripts/                 record_conversations.py, which generates docs/conversations.*
+docs/                    example conversations (markdown and raw JSON) and this README as a PDF
 ```
 
 ## Data and policy assumptions
